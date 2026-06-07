@@ -1,18 +1,12 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "musicmp3",
+  "name": "muiscmp",
   "compatibility_date": "2026-06-07",
   "observability": {
     "enabled": true
   },
   "assets": {
-    "directory": ".",
-    "exclude": [
-      ".git/**",
-      ".wrangler/**",
-      "node_modules/**",
-      "*.jsonc"
-    ]
+    "directory": "."
   },
   "compatibility_flags": [
     "nodejs_compat"
