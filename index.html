@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Music Speed Studio</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      padding: 20px;
+    }
+
+    .container {
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 24px;
+      padding: 40px;
+      width: 100%;
+      max-width: 560px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 1.8rem;
+      margin-bottom: 6px;
+      background: linear-gradient(90deg, #a78bfa, #60a5fa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.4);
+      margin-bottom: 30px;
+    }
+
+    /* ── Upload ── */
+    .upload-area {
+      border: 2px dashed rgba(167,139,250,0.5);
+      border-radius: 16px;
+      padding: 36px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all .3s;
+      background: rgba(167,139,250,0.04);
+    }
+    .upload-area:hover, .upload-area.drag-over {
+      border-color: #a78bfa;
+      background: rgba(167,139,250,0.1);
+    }
+    .upload-icon { font-size: 2.8rem; margin-bottom: 10px; }
+    .upload-area p { font-size: .95rem; color: rgba(255,255,255,0.6); }
+    .upload-area span { color: #a78bfa; font-weight: 600; }
+    #fileInput { display: none; }
+
+    .file-info {
+      display: none;
+      margin-top: 14px;
+      background: rgba(96,165,250,0.1);
+      border: 1px solid rgba(96,165,250,0.3);
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-size: .85rem;
+      color: #60a5fa;
+      text-align: center;
+    }
+
+    /* ── Controls ── */
+    .controls { margin-top: 28px; }
+
+    .control-group { margin-bottom: 22px; }
+
+    .control-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: .9rem;
+      color: rgba(255,255,255,0.75);
+    }
+
+    .value-badge {
+      background: rgba(167,139,250,0.2);
+      border: 1px solid rgba(167,139,250,0.4);
+      border-radius: 20px;
+      padding: 2px 12px;
+      font-size: .82rem;
+      color: #a78bfa;
+      font-weight: 600;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.15);
+      outline: none;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #a78bfa, #60a5fa);
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(167,139,250,0.6);
+      transition: transform .2s;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+
+    .hint { font-size: .75rem; color: rgba(255,255,255,0.35); margin-top: 5px; }
+
+    /* ── Buttons ── */
+    .btn-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 28px;
+    }
+
+    .btn {
+      padding: 13px;
+      border: none;
+      border-radius: 12px;
+      font-size: .95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .25s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+    }
+    .btn:disabled { opacity: .35; cursor: not-allowed; }
+
+    .btn-play {
+      background: linear-gradient(135deg, #a78bfa, #7c3aed);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(167,139,250,0.35);
+    }
+    .btn-play:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(167,139,250,0.5);
+    }
+
+    .btn-download {
+      background: linear-gradient(135deg, #60a5fa, #2563eb);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(96,165,250,0.35);
+    }
+    .btn-download:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(96,165,250,0.5);
+    }
+
+    .btn-stop {
+      background: rgba(255,255,255,0.07);
+      color: rgba(255,255,255,0.7);
+      border: 1px solid rgba(255,255,255,0.15);
+      grid-column: span 2;
+    }
+    .btn-stop:hover:not(:disabled) { background: rgba(255,255,255,0.12); }
+
+    /* ── Progress ── */
+    .progress-wrap { display: none; margin-top: 22px; }
+    .progress-label { font-size: .8rem; color: rgba(255,255,255,0.5); margin-bottom: 6px; text-align: center; }
+    .progress-bar-bg { background: rgba(255,255,255,0.1); border-radius: 8px; height: 8px; overflow: hidden; }
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 8px;
+      background: linear-gradient(90deg, #a78bfa, #60a5fa);
+      width: 0%;
+      transition: width .3s;
+    }
+
+    /* ── Visualizer ── */
+    .visualizer-wrap { margin-top: 22px; display: none; }
+    canvas#waveform {
+      width: 100%;
+      height: 64px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.04);
+    }
+
+    /* ── Now playing ── */
+    .now-playing {
+      display: none;
+      text-align: center;
+      margin-top: 14px;
+      font-size: .82rem;
+      color: rgba(255,255,255,0.45);
+    }
+    .now-playing .track { color: #a78bfa; }
+
+    .pulse {
+      display: inline-block;
+      width: 8px; height: 8px;
+      background: #a78bfa;
+      border-radius: 50%;
+      margin-right: 6px;
+      animation: pulse 1.2s infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity:1; transform:scale(1); }
+      50%      { opacity:.4; transform:scale(.7); }
+    }
+
+    /* ── Time bar ── */
+    .time-bar {
+      display: none;
+      margin-top: 14px;
+    }
+    .time-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: .75rem;
+      color: rgba(255,255,255,0.35);
+      margin-bottom: 4px;
+    }
+    #seekBar {
+      width: 100%;
+      height: 4px;
+      cursor: pointer;
+      accent-color: #a78bfa;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🎵 Music Speed Studio</h1>
+  <p class="subtitle">Sube tu audio · ajusta velocidad y bajos · descarga</p>
+
+  <!-- Upload -->
+  <div class="upload-area" id="uploadArea">
+    <div class="upload-icon">🎧</div>
+    <p>Arrastra tu archivo aquí o <span>haz clic para subir</span></p>
+    <p style="font-size:.78rem;margin-top:6px;color:rgba(255,255,255,0.3)">MP3 · MP4 · WAV · OGG · AAC</p>
+  </div>
+  <input type="file" id="fileInput" accept="audio/*,video/mp4" />
+  <div class="file-info" id="fileInfo"></div>
+
+  <!-- Controls -->
+  <div class="controls">
+
+    <div class="control-group">
+      <div class="control-label">
+        <span>⚡ Velocidad (Speed)</span>
+        <span class="value-badge" id="speedVal">4.00×</span>
+      </div>
+      <input type="range" id="speedSlider" min="0.25" max="4" step="0.05" value="4" />
+      <p class="hint">Ponlo en 1.0× para velocidad normal y suave</p>
+    </div>
+
+    <div class="control-group">
+      <div class="control-label">
+        <span>🎼 Pitch (tono independiente)</span>
+        <span class="value-badge" id="pitchVal">+12 semit.</span>
+      </div>
+      <input type="range" id="pitchSlider" min="-12" max="12" step="1" value="12" />
+      <p class="hint">Sube o baja el tono sin cambiar la velocidad</p>
+    </div>
+
+    <div class="control-group">
+      <div class="control-label">
+        <span>🔊 Bajos (Bass Boost)</span>
+        <span class="value-badge" id="bassVal">+7.0 dB</span>
+      </div>
+      <input type="range" id="bassSlider" min="0" max="15" step="0.5" value="7" />
+      <p class="hint">Un poco de bass para ese rebote cómodo</p>
+    </div>
+
+    <div class="control-group">
+      <div class="control-label">
+        <span>📊 Normalizar volumen</span>
+        <span class="value-badge" id="normVal">60%</span>
+      </div>
+      <input type="range" id="normSlider" min="0" max="100" step="1" value="60" />
+      <p class="hint">Ajusta el nivel de volumen del audio final (100% = sin cambio)</p>
+    </div>
+
+  </div>
+
+  <!-- Visualizer -->
+  <div class="visualizer-wrap" id="visualizerWrap">
+    <canvas id="waveform"></canvas>
+  </div>
+
+  <!-- Now playing + seek -->
+  <div class="now-playing" id="nowPlaying">
+    <span class="pulse"></span>Reproduciendo: <span class="track" id="trackName"></span>
+  </div>
+
+  <div class="time-bar" id="timeBar">
+    <div class="time-labels">
+      <span id="timeCurrent">0:00</span>
+      <span id="timeTotal">0:00</span>
+    </div>
+    <input type="range" id="seekBar" min="0" max="100" value="0" step="0.1" />
+  </div>
+
+  <!-- Progress render -->
+  <div class="progress-wrap" id="progressWrap">
+    <p class="progress-label" id="progressLabel">Procesando...</p>
+    <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill"></div></div>
+  </div>
+
+  <!-- Buttons -->
+  <div class="btn-row">
+    <button class="btn btn-play"     id="btnPlay"     disabled>▶ Escuchar</button>
+    <button class="btn btn-download" id="btnDownload" disabled>⬇ Descargar</button>
+    <button class="btn btn-stop"     id="btnStop"     disabled>⏹ Detener</button>
+  </div>
+</div>
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────────────
+let audioCtx   = null;
+let audioBuffer= null;
+let sourceNode = null;
+let bassFilter = null;
+let gainNode   = null;
+let analyser   = null;
+let animId     = null;
+let isPlaying  = false;
+let startedAt  = 0;       // audioCtx.currentTime when playback started (adjusted for offset)
+let currentOffset = 0;    // seconds into the original buffer where we are
+let fileName   = 'audio';
+let seekDragging = false;
+let tickId     = null;
+
+// ── DOM ───────────────────────────────────────────────────────────────────────
+const uploadArea  = document.getElementById('uploadArea');
+const fileInput   = document.getElementById('fileInput');
+const fileInfo    = document.getElementById('fileInfo');
+const speedSlider = document.getElementById('speedSlider');
+const speedVal    = document.getElementById('speedVal');
+const pitchSlider = document.getElementById('pitchSlider');
+const pitchVal    = document.getElementById('pitchVal');
+const bassSlider  = document.getElementById('bassSlider');
+const bassVal     = document.getElementById('bassVal');
+const normSlider  = document.getElementById('normSlider');
+const normVal     = document.getElementById('normVal');
+const btnPlay     = document.getElementById('btnPlay');
+const btnStop     = document.getElementById('btnStop');
+const btnDownload = document.getElementById('btnDownload');
+const progressWrap= document.getElementById('progressWrap');
+const progressFill= document.getElementById('progressFill');
+const progressLbl = document.getElementById('progressLabel');
+const nowPlaying  = document.getElementById('nowPlaying');
+const trackName   = document.getElementById('trackName');
+const vizWrap     = document.getElementById('visualizerWrap');
+const canvas      = document.getElementById('waveform');
+const c2d         = canvas.getContext('2d');
+const timeBar     = document.getElementById('timeBar');
+const timeCurrent = document.getElementById('timeCurrent');
+const timeTotal   = document.getElementById('timeTotal');
+const seekBar     = document.getElementById('seekBar');
+
+// ── Upload ────────────────────────────────────────────────────────────────────
+uploadArea.addEventListener('click', () => fileInput.click());
+uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('drag-over'); });
+uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag-over'));
+uploadArea.addEventListener('drop', e => {
+  e.preventDefault(); uploadArea.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) handleFile(fileInput.files[0]); });
+
+async function handleFile(file) {
+  stopAll();
+  fileName = file.name.replace(/\.[^.]+$/, '');
+  fileInfo.textContent = `🎵 ${file.name}  (${(file.size/1024/1024).toFixed(2)} MB)`;
+  fileInfo.style.display = 'block';
+
+  showProgress('Leyendo archivo…', 10);
+  const ab = await file.arrayBuffer();
+  showProgress('Decodificando audio…', 40);
+
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  try {
+    audioBuffer = await audioCtx.decodeAudioData(ab);
+  } catch(e) {
+    hideProgress();
+    alert('No se pudo decodificar el archivo. Prueba con MP3 o WAV estándar.');
+    return;
+  }
+
+  // Aplicar configuraciones automáticas al subir la canción
+  applyDefaults();
+
+  showProgress('Listo ✓', 100);
+  setTimeout(hideProgress, 800);
+
+  timeTotal.textContent = fmt(audioBuffer.duration);
+  seekBar.max = audioBuffer.duration;
+  btnPlay.disabled = false;
+  btnDownload.disabled = false;
+  currentOffset = 0;
+}
+
+// Aplica los ajustes recomendados cada vez que se sube una canción
+function applyDefaults() {
+  // Velocidad × 4
+  speedSlider.value = '4';
+  speedVal.textContent = '4.00×';
+
+  // Pitch +12 semitonos
+  pitchSlider.value = '12';
+  pitchVal.textContent = '+12 semit.';
+
+  // Bajos +7 dB
+  bassSlider.value = '7';
+  bassVal.textContent = '+7.0 dB';
+
+  // Normalización 60 %
+  normSlider.value = '60';
+  normVal.textContent = '60%';
+}
+
+// ── Sliders ───────────────────────────────────────────────────────────────────
+speedSlider.addEventListener('input', () => {
+  speedVal.textContent = parseFloat(speedSlider.value).toFixed(2) + '×';
+  if (isPlaying) restartFrom(liveOffset());
+});
+
+pitchSlider.addEventListener('input', () => {
+  const v = parseInt(pitchSlider.value);
+  pitchVal.textContent = (v >= 0 ? '+' : '') + v + ' semit.';
+  if (isPlaying) restartFrom(liveOffset());
+});
+
+bassSlider.addEventListener('input', () => {
+  bassVal.textContent = '+' + parseFloat(bassSlider.value).toFixed(1) + ' dB';
+  if (bassFilter) bassFilter.gain.value = parseFloat(bassSlider.value);
+});
+
+normSlider.addEventListener('input', () => {
+  normVal.textContent = normSlider.value + '%';
+  if (gainNode) gainNode.gain.value = parseFloat(normSlider.value) / 100;
+});
+
+// ── Seek bar ──────────────────────────────────────────────────────────────────
+seekBar.addEventListener('mousedown', () => { seekDragging = true; });
+seekBar.addEventListener('touchstart', () => { seekDragging = true; });
+seekBar.addEventListener('input', () => {
+  timeCurrent.textContent = fmt(parseFloat(seekBar.value));
+});
+seekBar.addEventListener('change', () => {
+  seekDragging = false;
+  const t = parseFloat(seekBar.value);
+  if (isPlaying) {
+    restartFrom(t);
+  } else {
+    currentOffset = t;
+  }
+});
+
+// ── Playback ──────────────────────────────────────────────────────────────────
+btnPlay.addEventListener('click', () => {
+  if (!audioBuffer) return;
+  if (isPlaying) { pausePlayback(); return; }
+  startPlayback(currentOffset);
+});
+
+btnStop.addEventListener('click', () => stopAll());
+
+function liveOffset() {
+  if (!isPlaying) return currentOffset;
+  const speed = parseFloat(speedSlider.value);
+  return Math.min(audioBuffer.duration, (audioCtx.currentTime - startedAt) * speed + currentOffset);
+}
+
+function buildGraph() {
+  bassFilter = audioCtx.createBiquadFilter();
+  bassFilter.type = 'lowshelf';
+  bassFilter.frequency.value = 120;
+  bassFilter.gain.value = parseFloat(bassSlider.value);
+
+  gainNode = audioCtx.createGain();
+  gainNode.gain.value = parseFloat(normSlider.value) / 100;
+
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 256;
+
+  // chain: source → bass filter → gain (normalize) → analyser → output
+  bassFilter.connect(gainNode);
+  gainNode.connect(analyser);
+  analyser.connect(audioCtx.destination);
+}
+
+function startPlayback(offset = 0) {
+  if (!audioBuffer) return;
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+
+  buildGraph();
+
+  const speed  = parseFloat(speedSlider.value);
+  const pitch  = parseInt(pitchSlider.value);
+  // Keep perceived pitch locked: compensate speed change in detune, then add user pitch
+  const detuneCompensation = -Math.log2(speed) * 12 * 100;  // cents
+  const userDetune = pitch * 100;
+
+  sourceNode = audioCtx.createBufferSource();
+  sourceNode.buffer = audioBuffer;
+  sourceNode.playbackRate.value = speed;
+  sourceNode.detune.value = detuneCompensation + userDetune;
+  sourceNode.connect(bassFilter);
+  sourceNode.start(0, offset);
+
+  startedAt = audioCtx.currentTime;
+  currentOffset = offset;
+  isPlaying = true;
+
+  btnPlay.textContent = '⏸ Pausar';
+  btnStop.disabled = false;
+  nowPlaying.style.display = 'block';
+  trackName.textContent = fileName;
+  vizWrap.style.display = 'block';
+  timeBar.style.display = 'block';
+
+  drawViz();
+  startTick();
+
+  sourceNode.onended = () => {
+    if (isPlaying) {
+      isPlaying = false;
+      currentOffset = 0;
+      btnPlay.textContent = '▶ Escuchar';
+      btnStop.disabled = true;
+      nowPlaying.style.display = 'none';
+      stopTick();
+      cancelAnimationFrame(animId);
+    }
+  };
+}
+
+function pausePlayback() {
+  currentOffset = liveOffset();
+  killSource();
+  isPlaying = false;
+  btnPlay.textContent = '▶ Continuar';
+  stopTick();
+}
+
+function stopAll() {
+  killSource();
+  isPlaying = false;
+  currentOffset = 0;
+  btnPlay.textContent = '▶ Escuchar';
+  btnStop.disabled = true;
+  nowPlaying.style.display = 'none';
+  stopTick();
+  cancelAnimationFrame(animId);
+  seekBar.value = 0;
+  timeCurrent.textContent = '0:00';
+}
+
+function restartFrom(offset) {
+  killSource();
+  isPlaying = false;
+  startPlayback(offset);
+}
+
+function killSource() {
+  if (sourceNode) {
+    sourceNode.onended = null;
+    try { sourceNode.stop(); } catch(e) {}
+    sourceNode = null;
+  }
+}
+
+// ── Tick (seek bar update) ────────────────────────────────────────────────────
+function startTick() {
+  stopTick();
+  tickId = setInterval(() => {
+    if (!isPlaying || seekDragging) return;
+    const pos = liveOffset();
+    if (!isNaN(pos)) {
+      seekBar.value = pos;
+      timeCurrent.textContent = fmt(pos);
+    }
+  }, 200);
+}
+function stopTick() { if (tickId) { clearInterval(tickId); tickId = null; } }
+
+// ── Visualizer ────────────────────────────────────────────────────────────────
+function drawViz() {
+  const W = canvas.offsetWidth  * (window.devicePixelRatio || 1);
+  const H = canvas.offsetHeight * (window.devicePixelRatio || 1);
+  canvas.width  = W;
+  canvas.height = H;
+
+  const data = new Uint8Array(analyser.frequencyBinCount);
+
+  function frame() {
+    animId = requestAnimationFrame(frame);
+    analyser.getByteFrequencyData(data);
+    c2d.clearRect(0, 0, W, H);
+    const bw = W / data.length * 2.5;
+    let x = 0;
+    for (let i = 0; i < data.length; i++) {
+      const bh = (data[i] / 255) * H;
+      const hue = 200 + (i / data.length) * 80;
+      c2d.fillStyle = `hsla(${hue},80%,65%,0.85)`;
+      c2d.fillRect(x, H - bh, bw - 1, bh);
+      x += bw;
+    }
+  }
+  frame();
+}
+
+// ── Download (OfflineAudioContext → WAV) ──────────────────────────────────────
+btnDownload.addEventListener('click', async () => {
+  if (!audioBuffer) return;
+  btnDownload.disabled = true;
+  btnPlay.disabled = true;
+
+  const speed = parseFloat(speedSlider.value);
+  const pitch = parseInt(pitchSlider.value);
+  const bass  = parseFloat(bassSlider.value);
+  const detuneComp = -Math.log2(speed) * 12 * 100;
+  const userDetune  = pitch * 100;
+
+  const outSamples = Math.ceil(audioBuffer.length / speed);
+  showProgress('Renderizando audio…', 5);
+
+  const off = new OfflineAudioContext(
+    audioBuffer.numberOfChannels,
+    outSamples,
+    audioBuffer.sampleRate
+  );
+
+  const offBass = off.createBiquadFilter();
+  offBass.type = 'lowshelf';
+  offBass.frequency.value = 120;
+  offBass.gain.value = bass;
+
+  const offGain = off.createGain();
+  offGain.gain.value = parseFloat(normSlider.value) / 100;
+
+  offBass.connect(offGain);
+  offGain.connect(off.destination);
+
+  const offSrc = off.createBufferSource();
+  offSrc.buffer = audioBuffer;
+  offSrc.playbackRate.value = speed;
+  offSrc.detune.value = detuneComp + userDetune;
+  offSrc.connect(offBass);
+  offSrc.start(0);
+
+  showProgress('Renderizando audio…', 40);
+
+  let rendered;
+  try {
+    rendered = await off.startRendering();
+  } catch(e) {
+    alert('Error al renderizar. Intenta con un archivo más pequeño.');
+    hideProgress();
+    btnDownload.disabled = false;
+    btnPlay.disabled = false;
+    return;
+  }
+
+  showProgress('Codificando WAV…', 80);
+  const blob = encodeWAV(rendered);
+  showProgress('Descargando…', 98);
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${fileName}_speed${speed.toFixed(2)}x_bass${bass}dB.wav`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  hideProgress();
+  btnDownload.disabled = false;
+  btnPlay.disabled = false;
+});
+
+// ── WAV encoder ───────────────────────────────────────────────────────────────
+function encodeWAV(buf) {
+  const nch  = buf.numberOfChannels;
+  const sr   = buf.sampleRate;
+  const len  = buf.length * nch * 2;
+  const ab   = new ArrayBuffer(44 + len);
+  const view = new DataView(ab);
+  const str  = (o, s) => { for (let i=0;i<s.length;i++) view.setUint8(o+i, s.charCodeAt(i)); };
+
+  str(0,'RIFF'); view.setUint32(4, 36+len, true);
+  str(8,'WAVE'); str(12,'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, nch, true);
+  view.setUint32(24, sr, true);
+  view.setUint32(28, sr*nch*2, true);
+  view.setUint16(32, nch*2, true);
+  view.setUint16(34, 16, true);
+  str(36,'data'); view.setUint32(40, len, true);
+
+  const out = new Int16Array(ab, 44);
+  let pos = 0;
+  for (let i = 0; i < buf.length; i++) {
+    for (let ch = 0; ch < nch; ch++) {
+      const s = buf.getChannelData(ch)[i];
+      out[pos++] = Math.max(-1, Math.min(1, s)) * 0x7FFF;
+    }
+  }
+  return new Blob([ab], { type: 'audio/wav' });
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function fmt(s) {
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60).toString().padStart(2,'0');
+  return `${m}:${sec}`;
+}
+function showProgress(lbl, pct) {
+  progressWrap.style.display = 'block';
+  progressLbl.textContent = lbl;
+  progressFill.style.width = pct + '%';
+}
+function hideProgress() {
+  progressWrap.style.display = 'none';
+  progressFill.style.width = '0%';
+}
+</script>
+</body>
+</html>
